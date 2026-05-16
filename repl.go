@@ -4,17 +4,20 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"pokedexcli/internal/pokecache"
 )
 
 type config struct {
 	next     *string
 	previous *string
+	cache    *pokecache.Cache
 }
 
 type cliCommand struct {
 	name        string
 	description string
-	callback    func() error
+	callback    func(args []string) error
 }
 
 func getCommands(cfg *config) map[string]cliCommand {
@@ -38,6 +41,11 @@ func getCommands(cfg *config) map[string]cliCommand {
 			name:        "mapb",
 			description: "Displays the previous 20 location areas",
 			callback:    commandMapb(cfg),
+		},
+		"explore": {
+			name:        "explore",
+			description: "Lists all Pokémon in a location area",
+			callback:    commandExplore(cfg),
 		},
 	}
 }
@@ -67,7 +75,7 @@ func commandMap(cfg *config) func() error {
 			url = *cfg.next
 		}
 
-		result, err := fetchLocationAreas(url)
+		result, err := fetchLocationAreas(url, cfg.cache)
 		if err != nil {
 			return err
 		}
@@ -88,7 +96,7 @@ func commandMapb(cfg *config) func() error {
 			return fmt.Errorf("you're on the first page")
 		}
 
-		result, err := fetchLocationAreas(*cfg.previous)
+		result, err := fetchLocationAreas(*cfg.previous, cfg.cache)
 		if err != nil {
 			return err
 		}
